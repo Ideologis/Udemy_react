@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import Search from "../components/Search";
 import Recipe from "../components/Recipe/Recipe";
 import Favourites from "../components/Favourites/Favourites";
@@ -19,7 +19,6 @@ const HomePage = () => {
   function reducer(action, state) {
     switch (action.type) {
       case "filterFavourite":
-
         return {
           ...state,
           filteredValue: action.value,
@@ -49,25 +48,31 @@ const HomePage = () => {
     }
     getReciepes(input);
   }
+  const AddToFavourites = useCallback(
+    (getReciepe) => {
+      let cpyFavourites = [...favourite];
 
-  function AddToFavourites(getReciepe) {
-    let cpyFavourites = [...favourite];
+      const index = cpyFavourites.findIndex(
+        (item) => item.id === getReciepe.id
+      );
 
-    const index = cpyFavourites.findIndex((item) => item.id === getReciepe.id);
+      if (index === -1) {
+        cpyFavourites.push(getReciepe);
+        setFavourite(cpyFavourites);
+        console.log(getReciepe.id);
 
-    if (index === -1) {
-      cpyFavourites.push(getReciepe);
-      setFavourite(cpyFavourites);
-      console.log(getReciepe.id);
+        //Save inlocalStorages
+        localStorage.setItem("favourites", JSON.stringify(cpyFavourites));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        alert("Item is already present in favourties");
+      }
+    },
+    [favourite]
+  );
 
-      //Save inlocalStorages
-      localStorage.setItem("favourites", JSON.stringify(cpyFavourites));
-    } else {
-      alert("Item is already present in favourties");
-    }
-  }
   useEffect(() => {
-    const extractFavourites = JSON.parse(localStorage.getItem("favourites"));
+    const extractFavourites = JSON.parse(localStorage.getItem("favourites")) || [];
     setFavourite(extractFavourites);
   }, []);
 
@@ -78,9 +83,26 @@ const HomePage = () => {
     localStorage.setItem("favourites", JSON.stringify(cpyFavourites));
   }
 
-  const filterFavourite = favourite.filter((items) =>
-    items.title.toLowerCase().includes(state.filteredValue)
-  );
+  const filterFavourite =
+    favourite && favourite.length > 0
+      ? favourite.filter((items) =>
+          items.title.toLowerCase().includes(state.filteredValue)
+        )
+      : [];
+
+  const renderRecipes = useCallback(() => {
+    if (recipes && recipes.length > 0) {
+      return recipes.map((items) => (
+        <Recipe
+          AddFavourites={() => AddToFavourites(items)}
+          id={items.id}
+          image={items.image}
+          title={items.title}
+          item={items}
+        />
+      ));
+    }
+  }, [recipes, AddToFavourites]);
   console.log(state);
   return (
     <div className="">
@@ -127,7 +149,24 @@ const HomePage = () => {
         </div>
       )}
       <div className="grid grid-cols-4 gap-4 p-4 m-4">
-        {recipes && recipes.length > 0
+        {/* {renderRecipes()}
+         */}
+        {useMemo(
+          () =>
+            !loadingState && recipes && recipes.length > 0
+              ? recipes.map((items, index) => (
+                  <Recipe
+                    AddFavourites={() => AddToFavourites(items)}
+                    id={items.id}
+                    image={items.image}
+                    title={items.title}
+                    item={items}
+                  />
+                ))
+              : null,
+          [recipes, loadingState, AddToFavourites]
+        )}
+        {/* {recipes && recipes.length > 0
           ? recipes.map((items, index) => (
               <Recipe
                 AddFavourites={() => AddToFavourites(items)}
@@ -137,7 +176,7 @@ const HomePage = () => {
                 item={items}
               />
             ))
-          : null}
+          : null} */}
       </div>
     </div>
   );

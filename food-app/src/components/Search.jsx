@@ -18,7 +18,7 @@ const Search = ({ getData, apiSuccess, setApiSuccess }) => {
       setInputValue("");
       setApiSuccess(false);
     }
-  }, [apiSuccess]);
+  }, [apiSuccess, setApiSuccess]);
 
   return (
     <div className=" flex gap-5 justify-center">
